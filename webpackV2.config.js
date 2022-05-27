@@ -9,6 +9,8 @@ var { CleanWebpackPlugin } = require('clean-webpack-plugin');
 
 const ASSET_PATH = process.env.ASSET_PATH || '/';
 
+const BUILD_PATH = 'buildv2';
+
 var alias = {
   'react-dom': '@hot-loader/react-dom',
 };
@@ -36,20 +38,20 @@ if (fileSystem.existsSync(secretsPath)) {
 var options = {
   mode: process.env.NODE_ENV || 'development',
   entry: {
-    newtab: path.join(__dirname, 'src', 'pages', 'Newtab', 'index.jsx'),
-    options: path.join(__dirname, 'src', 'pages', 'Options', 'index.jsx'),
-    popup: path.join(__dirname, 'src', 'pages', 'Popup', 'index.jsx'),
-    background: path.join(__dirname, 'src', 'pages', 'Background', 'index.js'),
-    contentScript: path.join(__dirname, 'src', 'pages', 'Content', 'index.js'),
-    devtools: path.join(__dirname, 'src', 'pages', 'Devtools', 'index.js'),
-    panel: path.join(__dirname, 'src', 'pages', 'Panel', 'index.jsx'),
+    newtab: path.join(__dirname, 'src', 'pages', 'Newtab', 'index.tsx'),
+    options: path.join(__dirname, 'src', 'pages', 'Options', 'index.tsx'),
+    popup: path.join(__dirname, 'src', 'pages', 'Popup', 'index.tsx'),
+    background: path.join(__dirname, 'src', 'pages', 'Background', 'index.ts'),
+    contentScript: path.join(__dirname, 'src', 'pages', 'Content', 'index.ts'),
+    devtools: path.join(__dirname, 'src', 'pages', 'Devtools', 'index.ts'),
+    panel: path.join(__dirname, 'src', 'pages', 'Panel', 'index.tsx'),
   },
   chromeExtensionBoilerplate: {
-    notHotReload: ['background', 'contentScript', 'devtools'],
+    notHotReload: ['contentScript', 'devtools'],
   },
   output: {
+    path: path.resolve(__dirname, BUILD_PATH),
     filename: '[name].bundle.js',
-    path: path.resolve(__dirname, 'build'),
     clean: true,
     publicPath: ASSET_PATH,
   },
@@ -67,6 +69,9 @@ var options = {
             loader: 'css-loader',
           },
           {
+            loader: 'postcss-loader',
+          },
+          {
             loader: 'sass-loader',
             options: {
               sourceMap: true,
@@ -76,12 +81,11 @@ var options = {
       },
       {
         test: new RegExp('.(' + fileExtensions.join('|') + ')$'),
-        type: 'asset/resource',
+        loader: 'file-loader',
+        options: {
+          name: '[name].[ext]',
+        },
         exclude: /node_modules/,
-        // loader: 'file-loader',
-        // options: {
-        //   name: '[name].[ext]',
-        // },
       },
       {
         test: /\.html$/,
@@ -117,8 +121,8 @@ var options = {
     new CopyWebpackPlugin({
       patterns: [
         {
-          from: 'src/manifest.json',
-          to: path.join(__dirname, 'build'),
+          from: 'src/manifestV2.json',
+          to: path.join(__dirname, `${BUILD_PATH}/manifest.json`),
           force: true,
           transform: function (content, path) {
             // generates the manifest file using the package.json informations
@@ -136,17 +140,8 @@ var options = {
     new CopyWebpackPlugin({
       patterns: [
         {
-          from: 'src/pages/Content/content.styles.css',
-          to: path.join(__dirname, 'build'),
-          force: true,
-        },
-      ],
-    }),
-    new CopyWebpackPlugin({
-      patterns: [
-        {
           from: 'src/assets/img/icon-128.png',
-          to: path.join(__dirname, 'build'),
+          to: path.join(__dirname, BUILD_PATH),
           force: true,
         },
       ],
@@ -155,7 +150,16 @@ var options = {
       patterns: [
         {
           from: 'src/assets/img/icon-34.png',
-          to: path.join(__dirname, 'build'),
+          to: path.join(__dirname, BUILD_PATH),
+          force: true,
+        },
+      ],
+    }),
+    new CopyWebpackPlugin({
+      patterns: [
+        {
+          from: 'src/pages/Content/content.styles.css',
+          to: path.join(__dirname, BUILD_PATH),
           force: true,
         },
       ],
@@ -179,6 +183,18 @@ var options = {
       cache: false,
     }),
     new HtmlWebpackPlugin({
+      template: path.join(
+        __dirname,
+        'src',
+        'pages',
+        'Background',
+        'index.html'
+      ),
+      filename: 'background.html',
+      chunks: ['background'],
+      cache: false,
+    }),
+    new HtmlWebpackPlugin({
       template: path.join(__dirname, 'src', 'pages', 'Devtools', 'index.html'),
       filename: 'devtools.html',
       chunks: ['devtools'],
@@ -197,7 +213,7 @@ var options = {
 };
 
 if (env.NODE_ENV === 'development') {
-  options.devtool = 'cheap-module-source-map';
+  options.devtool = 'eval-cheap-module-source-map';
 } else {
   options.optimization = {
     minimize: true,

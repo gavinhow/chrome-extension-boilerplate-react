@@ -5,9 +5,21 @@ process.env.ASSET_PATH = '/';
 
 var WebpackDevServer = require('webpack-dev-server'),
   webpack = require('webpack'),
-  config = require('../webpack.config'),
+  configV2 = require('../webpackV2.config'),
+  configV3 = require('../webpackV3.config'),
   env = require('./env'),
-  path = require('path');
+  path = require('path'),
+  yargs = require('yargs');
+
+const argv = yargs.argv;
+
+let config;
+
+if (argv.v3) {
+  config = configV3;
+} else {
+  config = configV2;
+}
 
 var options = config.chromeExtensionBoilerplate || {};
 var excludeEntriesToHotReload = options.notHotReload || [];

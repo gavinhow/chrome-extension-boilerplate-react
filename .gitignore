@@ -8,6 +8,9 @@
 
 # production
 /build
+/buildv2
+/buildv3
+
 
 # misc
 .DS_Store
